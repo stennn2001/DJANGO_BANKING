@@ -150,6 +150,23 @@ STATIC_ROOT = str(BASE_DIR / 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = "user_auth.User"
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "NextGen Bank API",
+    "DESCRIPTION": "API for banking system",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "LICENCE": {
+        "name": "MIT License",
+        "url": "https://opensource.org/license/MIT",
+        },
+}
+
 LOGGING_CONFIG = None
 
 LOGURU_LOGGING = {
