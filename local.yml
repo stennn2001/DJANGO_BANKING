@@ -5,7 +5,8 @@ services:
       dockerfile: ./docker/local/django/Dockerfile
     volumes:
       - .:/app:z
-      - ./staticfiles:/app/staticfiles
+      - /app/venv
+      - staticfiles_volume:/app/staticfiles
     # ports:
     #   - "8000:8000"
     expose:
@@ -13,8 +14,14 @@ services:
     env_file:
       - ./.envs/.env.local
     depends_on:
-      - postgres
-      - mailpit
+      postgres:
+        condition: service_started
+      mailpit:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     command: /start.sh
     networks:
       - banker_local_nw
@@ -47,6 +54,59 @@ services:
     networks:
       - banker_local_nw
 
+  redis:
+    image: redis:7.0-alpine3.19
+    command: redis-server --appendonly yes
+    networks:
+      - banker_local_nw
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
+    networks:
+      - banker_local_nw
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  celeryworker:
+    <<: *api
+    command: /start-celeryworker.sh
+
+  flower:
+    <<: *api
+    ports:
+      - "5555:5555"
+    volumes:
+      - flower_db:/app/flower_db
+    command: /start-celeryflower.sh
+
+  celerybeat:
+    build:
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    command: /start-celerybeat.sh
+    env_file:
+      - ./.envs/.env.local
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - banker_local_nw
+      
+
+
   nginx:
     build:
       context: ./docker/local/nginx
@@ -55,7 +115,7 @@ services:
     ports:
       - "8090:80"
     volumes:
-      - ./staticfiles:/app/staticfiles
+      - staticfiles_volume:/app/staticfiles:ro
       - logs_store:/var/log/nginx
     depends_on:
       - api
@@ -67,9 +127,13 @@ networks:
     external: true
 
 volumes:
+  staticfiles_volume:
   banker_local_db:
   banker_mailpit_db:
   logs_store:
+  rabbitmq_data:
+  rabbitmq_log:
+  flower_db:
     
 
     
