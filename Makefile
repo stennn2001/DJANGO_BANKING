@@ -33,3 +33,18 @@ network-inspect:
 
 banker-db:
 	docker compose -f local.yml exec postgres psql --username LJj2jwKlsy7ttA --dbname banker
+
+status:
+	docker compose -f local.yml ps
+
+logs:
+	docker compose -f local.yml logs -f --tail=200
+
+logs-api:
+	docker compose -f local.yml logs -f --tail=200 api
+
+logs-celery:
+	docker compose -f local.yml logs -f --tail=200 celeryworker
+
+logs-rabbit:
+	docker compose -f local.yml logs -f --tail=200 rabbitmq
